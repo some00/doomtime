@@ -3,30 +3,6 @@ import dbus
 import sys
 from pathlib import Path
 from collections import namedtuple
-import numpy as np
-
-
-def rgb_to_packed_rgb444(i):
-    def shift():
-        for idx, x in enumerate(i.reshape(np.dot(*i.shape))):
-            yield (x & 0xf0) >> (0 if idx % 2 == 0 else 4)
-
-    def join():
-        g = shift()
-        while True:
-            try:
-                x = next(g)
-            except StopIteration:
-                return
-            try:
-                yield x | next(g)
-            except StopIteration:
-                yield x
-                return
-
-    assert(len(i.shape) == 2)
-    assert(i.shape[1] == 3)
-    return np.array(list(join()), dtype=np.uint8).tobytes()
 
 
 def import_doomtime_client():
@@ -35,9 +11,16 @@ def import_doomtime_client():
     return rv
 
 
+def import_rgb_to_packed_rgb444():
+    sys.path.append("@DOOMTIME_SCRIPTS@")
+    from rgb_to_packed_rgb444 import rgb_to_packed_rgb444 as rv
+    return rv
+
+
 Characteristics = namedtuple("Characteristics",
                              ["frames", "reset", "palettes"])
 doomtime_client = import_doomtime_client()
+rgb_to_packed_rgb444 = import_rgb_to_packed_rgb444()
 DBUS_OM_IFACE = "org.freedesktop.DBus.ObjectManager"
 BLUEZ_SERVICE_NAME = "org.bluez"
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
@@ -89,7 +72,9 @@ def main():
     parser.add_argument("-f", "--initial-fps", type=float, default=35.0,
                         help="FPS for the first second")
     parser.add_argument("-t", "--initial-stack-size", type=int, default=140)
-    parser.add_argument("-c", "--constant-fps", action="store_true")
+    parser.add_argument("-c", "--constant-fps", action="store_true",
+                        help=("Disables the throughput controller and"
+                              " keeps the initial fps"))
     args = parser.parse_args()
     chrs = find_service()
     chrs.reset.WriteValue(b"1", {})
@@ -103,7 +88,7 @@ def main():
         initial_fps=args.initial_fps,
         initial_stack_size=args.initial_stack_size,
         use_pid=not args.constant_fps,
-        to_packed_rgb_444=rgb_to_packed_rgb444,
+        to_packed_rgb_444=lambda x: rgb_to_packed_rgb444(x).tobytes(),
     )
 
 

@@ -27,15 +27,13 @@ using packets_t = std::array<packet_t, WIDTH / COL_PER_PACKET>;
 using pal_t = Eigen::Matrix<uint8_t, 256, 3, Eigen::RowMajor>;
 using pals_t = std::vector<pal_t>;
 using to_packed_rgb_444_t = std::function<std::string(const pal_t&)>;
+using offset_t = std::tuple<unsigned, unsigned>;
 
 struct frame_buffer_t
 {
-    static constexpr auto Y = 60;
-    static constexpr auto X = 112;
-
     frame_buffer_t(
         size_t stack_init_size, const to_packed_rgb_444_t& to_packed_rgb_444);
-    void push(const ipc::frame_t& frame, uint8_t pal_idx);
+    void push(const ipc::frame_t& frame, uint8_t pal_idx, const offset_t& offset);
     std::tuple<bool, packets_t> pop(bool wait=true);
     void stop();
     const std::vector<uint8_t>& palettes() const;

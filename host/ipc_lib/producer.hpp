@@ -14,6 +14,7 @@ struct producer_t
 {
     using exit_func_t = std::function<void(int)>;
     void set_palettes(const uint8_t* pals, size_t pal_count);
+    void set_windowxy(int windowx, int windowy);
     void frame_ready(const uint8_t* pixels);
     void frame_rendered();
     void palette_changed(uint8_t pal_idx);

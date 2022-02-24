@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
 #include <pybind11/eigen.h>
+#include <pybind11/stl.h>
 
 using namespace doomtime::ipc::producer;
 namespace py = pybind11;
@@ -34,6 +35,7 @@ PYBIND11_MODULE(doomtime_producer, m)
 {
     using frame_t = Eigen::Matrix<
         uint8_t, doomtime::ipc::HEIGHT, doomtime::ipc::WIDTH, Eigen::RowMajor>;
+	using pal_t = Eigen::Matrix<uint8_t, 256, 3, Eigen::RowMajor>;
     py::class_<helper_t, std::shared_ptr<helper_t>> var(m, "Producer");
     var.def(py::init<producer_t::exit_func_t>());
     var.def("__enter__", [] (helper_t& self) {
@@ -57,4 +59,14 @@ PYBIND11_MODULE(doomtime_producer, m)
     var.def("disconnected", [] (helper_t& self) {
         self.get().disconnected();
     }, py::call_guard<py::gil_scoped_release>());
+	var.def("set_palettes", [] (helper_t& self, std::vector<pal_t> pals) {
+		std::vector<uint8_t> param;
+		for (const auto& pal : pals)
+			std::copy(
+				pal.data(),
+				pal.data() + pal.rows() * pal.cols() * sizeof(uint8_t),
+				std::back_inserter(param)
+			);
+		self.get().set_palettes(param.data(), pals.size());
+	});
 }

@@ -11,4 +11,4 @@ syscfg.vals:
 syscfg.defs:
   DOOMTIME_FPS_ON_MOT_PIN:
     description: "Toggle vibrator motor pin when frame is rendered"
-    value: 1
+    value: 0

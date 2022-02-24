@@ -74,6 +74,12 @@ void consumer_thread_t::loop()
                 fmt::print(stderr, "palette hasn't arrived before first frame\n");
                 return;
             }
+            if (data_->windowx < 0 || data_->windowy < 0)
+            {
+                fb_.stop();
+                fmt::print(stderr, "invalid window offset\n");
+                return;
+            }
             fmt::print("palette count: {}\n", data_->palette_count);
             pals_t pals;
             std::transform(
@@ -86,6 +92,6 @@ void consumer_thread_t::loop()
         buf = data_->frame;
         pal_idx = data_->palette_index;
         data_->nempty.post();
-        fb_.push(buf, pal_idx);
+        fb_.push(buf, pal_idx, {data_->windowx, data_->windowy});
     }
 }

@@ -1,4 +1,3 @@
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include(FetchContent)
 FetchContent_Declare(googletest
   GIT_REPOSITORY https://github.com/google/googletest.git

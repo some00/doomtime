@@ -19,8 +19,9 @@ frame_buffer_t::frame_buffer_t(
 {
 }
 
-void frame_buffer_t::push(const ipc::frame_t& input_array, uint8_t pal_idx)
+void frame_buffer_t::push(const ipc::frame_t& input_array, uint8_t pal_idx, const offset_t& offset)
 {
+    const auto [X, Y] = offset;
     cv::Mat input_matrix(
         cv::Size(ipc::WIDTH, ipc::HEIGHT),
         CV_8UC1,

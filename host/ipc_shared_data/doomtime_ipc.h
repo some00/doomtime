@@ -9,6 +9,8 @@ extern "C" {
 
 // async, must be called before first frame
 void doomtime_ipc_set_palettes(const uint8_t* pals, size_t pal_count);
+// async
+void doomtime_ipc_windowxy(int windowx, int windowy);
 // pixels are ready to be rendered
 // a screen is 320 * 200 byte
 void doomtime_ipc_frame_ready(const uint8_t* pixels);

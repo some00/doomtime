@@ -22,4 +22,5 @@ target_link_libraries(doomtime_client PRIVATE
     client_impl
     fmt::fmt-header-only
 )
-configure_file(client.py ${CMAKE_CURRENT_BINARY_DIR}/client.py COPYONLY)
+set(DOOMTIME_SCRIPTS ${doomtime_scripts})
+configure_file(client.py ${CMAKE_CURRENT_BINARY_DIR}/client.py @ONLY)

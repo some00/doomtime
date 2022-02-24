@@ -1,12 +1,12 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b73c7984..5edeb2de 100644
+index b73c7984..917dd936 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -67,6 +67,7 @@ configure_file(src/resource.rc.in src/resource.rc)
  configure_file(src/setup-res.rc.in src/setup-res.rc)
  configure_file(src/setup/setup-manifest.xml.in src/setup/setup-manifest.xml)
  
-+add_subdirectory(doomtime/host)
++add_subdirectory(doomtime)
  foreach(SUBDIR textscreen opl pcsound src)
      add_subdirectory("${SUBDIR}")
  endforeach()
@@ -34,7 +34,7 @@ index 0310910a..1a2c6e0e 100644
 -target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net)
 +target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net doomtime_ipc)
 diff --git a/src/doom/d_main.c b/src/doom/d_main.c
-index cd5a74be..8838677c 100644
+index cd5a74be..673252d3 100644
 --- a/src/doom/d_main.c
 +++ b/src/doom/d_main.c
 @@ -20,6 +20,7 @@
@@ -54,7 +54,19 @@ index cd5a74be..8838677c 100644
  //
  // D-DoomLoop()
  // Not a globally visible function,
-@@ -1167,6 +1170,7 @@ void PrintGameVersion(void)
+@@ -243,7 +246,10 @@ boolean D_Display (void)
+     
+     // clean up border stuff
+     if (gamestate != oldgamestate && gamestate != GS_LEVEL)
+-	I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
++    {
++        doomtime_ipc_palette_changed(0);
++        I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
++    }
+ 
+     // see if the border needs to be initially drawn
+     if (gamestate == GS_LEVEL && oldgamestate != GS_LEVEL)
+@@ -1167,6 +1173,7 @@ void PrintGameVersion(void)
  static void D_Endoom(void)
  {
      byte *endoom;
@@ -62,6 +74,46 @@ index cd5a74be..8838677c 100644
  
      // Don't show ENDOOM if we have it disabled, or we're running
      // in screensaver or control test mode. Only show it once the
+diff --git a/src/doom/m_menu.c b/src/doom/m_menu.c
+index 0da4869b..b2b0ee5e 100644
+--- a/src/doom/m_menu.c
++++ b/src/doom/m_menu.c
+@@ -18,6 +18,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <stdlib.h>
+ #include <ctype.h>
+ 
+@@ -1734,6 +1735,7 @@ boolean M_Responder (event_t* ev)
+ 	    if (usegamma > 4)
+ 		usegamma = 0;
+ 	    players[consoleplayer].message = DEH_String(gammamsg[usegamma]);
++        doomtime_ipc_palette_changed(0);
+             I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
+ 	    return true;
+ 	}
+diff --git a/src/doom/r_draw.c b/src/doom/r_draw.c
+index 4fc41b5d..b4162c87 100644
+--- a/src/doom/r_draw.c
++++ b/src/doom/r_draw.c
+@@ -21,6 +21,7 @@
+ 
+ 
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_main.h"
+ 
+@@ -778,6 +779,7 @@ R_InitBuffer
+ 	viewwindowy = 0; 
+     else 
+ 	viewwindowy = (SCREENHEIGHT-SBARHEIGHT-height) >> 1; 
++    doomtime_ipc_windowxy(viewwindowx, viewwindowy);
+ 
+     // Preclaculate all row offsets.
+     for (i=0 ; i<height ; i++) 
 diff --git a/src/doom/r_main.c b/src/doom/r_main.c
 index 567ea4be..f1d82527 100644
 --- a/src/doom/r_main.c
@@ -77,7 +129,7 @@ index 567ea4be..f1d82527 100644
  
  
 diff --git a/src/doom/st_stuff.c b/src/doom/st_stuff.c
-index 95e24c16..e28adb9e 100644
+index 95e24c16..fe2bfb05 100644
 --- a/src/doom/st_stuff.c
 +++ b/src/doom/st_stuff.c
 @@ -20,6 +20,7 @@
@@ -96,11 +148,37 @@ index 95e24c16..e28adb9e 100644
  	I_SetPalette (pal);
      }
  
+@@ -1439,6 +1441,7 @@ void ST_Stop (void)
+     if (st_stopped)
+ 	return;
+ 
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette (W_CacheLumpNum (lu_palette, PU_CACHE));
+ 
+     st_stopped = true;
+diff --git a/src/heretic/CMakeLists.txt b/src/heretic/CMakeLists.txt
+index 9f12bde0..1e4870f8 100644
+--- a/src/heretic/CMakeLists.txt
++++ b/src/heretic/CMakeLists.txt
+@@ -54,4 +54,4 @@ add_library(heretic STATIC
+             s_sound.c           s_sound.h)
+ 
+ target_include_directories(heretic PRIVATE "../" "${CMAKE_CURRENT_BINARY_DIR}/../../")
+-target_link_libraries(heretic textscreen SDL2::SDL2 SDL2::mixer SDL2::net)
++target_link_libraries(heretic textscreen SDL2::SDL2 SDL2::mixer SDL2::net doomtime_ipc)
 diff --git a/src/heretic/d_main.c b/src/heretic/d_main.c
-index b2aeab8d..81b67808 100644
+index b2aeab8d..9861acbb 100644
 --- a/src/heretic/d_main.c
 +++ b/src/heretic/d_main.c
-@@ -53,6 +53,7 @@
+@@ -16,6 +16,7 @@
+ 
+ // D_main.c
+ 
++#include <doomtime_ipc.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+@@ -53,6 +54,7 @@
  #define STARTUP_WINDOW_X 17
  #define STARTUP_WINDOW_Y 7
  
@@ -108,8 +186,355 @@ index b2aeab8d..81b67808 100644
  GameMode_t gamemode = indetermined;
  const char *gamedescription = "unknown";
  
+@@ -705,6 +707,7 @@ void D_BindVariables(void)
+ static void D_Endoom(void)
+ {
+     byte *endoom_data;
++    doomtime_ipc_disconnected();
+ 
+     // Disable ENDOOM?
+ 
+diff --git a/src/heretic/f_finale.c b/src/heretic/f_finale.c
+index 6bc5368f..516abd51 100644
+--- a/src/heretic/f_finale.c
++++ b/src/heretic/f_finale.c
+@@ -17,6 +17,7 @@
+ 
+ #include <ctype.h>
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_str.h"
+ #include "i_swap.h"
+@@ -315,6 +316,7 @@ void F_DrawUnderwater(void)
+                 V_DrawFilledBox(0, 0, SCREENWIDTH, SCREENHEIGHT, 0);
+                 lumpname = DEH_String("E2PAL");
+                 palette = W_CacheLumpName(lumpname, PU_STATIC);
++                // can't upload palette now
+                 I_SetPalette(palette);
+                 W_ReleaseLumpName(lumpname);
+                 V_DrawRawScreen(W_CacheLumpName(DEH_String("E2END"), PU_CACHE));
+@@ -329,6 +331,7 @@ void F_DrawUnderwater(void)
+             {
+                 lumpname = DEH_String("PLAYPAL");
+                 palette = W_CacheLumpName(lumpname, PU_STATIC);
++                doomtime_ipc_palette_changed(0);
+                 I_SetPalette(palette);
+                 W_ReleaseLumpName(lumpname);
+                 underwawa = false;
+diff --git a/src/heretic/in_lude.c b/src/heretic/in_lude.c
+index ed2ff0ca..fc6a603f 100644
+--- a/src/heretic/in_lude.c
++++ b/src/heretic/in_lude.c
+@@ -21,6 +21,7 @@
+ ========================
+ */
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_str.h"
+ #include "p_local.h"
+@@ -162,6 +163,7 @@ extern void AM_Stop(void);
+ 
+ void IN_Start(void)
+ {
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette(W_CacheLumpName(DEH_String("PLAYPAL"), PU_CACHE));
+     IN_LoadPics();
+     IN_InitStats();
+diff --git a/src/heretic/mn_menu.c b/src/heretic/mn_menu.c
+index 3c91fe39..91357292 100644
+--- a/src/heretic/mn_menu.c
++++ b/src/heretic/mn_menu.c
+@@ -16,6 +16,7 @@
+ 
+ // MN_menu.c
+ 
++#include <doomtime_ipc.h>
+ #include <stdlib.h>
+ #include <ctype.h>
+ 
+@@ -1151,6 +1152,7 @@ boolean MN_Responder(event_t * event)
+                     //set the msg to be cleared
+                     players[consoleplayer].message = NULL;
+                     paused = false;
++                    doomtime_ipc_palette_changed(0);
+                     I_SetPalette(W_CacheLumpName
+                                  ("PLAYPAL", PU_CACHE));
+                     D_StartTitle();     // go to intro/demo mode.
+@@ -1377,6 +1379,7 @@ boolean MN_Responder(event_t * event)
+             {
+                 usegamma = 0;
+             }
++            doomtime_ipc_palette_changed(0);
+             I_SetPalette((byte *) W_CacheLumpName("PLAYPAL", PU_CACHE));
+             return true;
+         }
+@@ -1648,6 +1651,7 @@ void MN_DeactivateMenu(void)
+ 
+ void MN_DrawInfo(void)
+ {
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE));
+     V_DrawRawScreen(W_CacheLumpNum(W_GetNumForName("TITLE") + InfoType,
+                                    PU_CACHE));
+diff --git a/src/heretic/p_user.c b/src/heretic/p_user.c
+index 9c22d0b7..ce1ab906 100644
+--- a/src/heretic/p_user.c
++++ b/src/heretic/p_user.c
+@@ -16,6 +16,7 @@
+ 
+ // P_user.c
+ 
++#include <doomtime_ipc.h>
+ #include <stdlib.h>
+ 
+ #include "doomdef.h"
+@@ -387,6 +388,7 @@ void P_DeathThink(player_t * player)
+     {
+         if (player == &players[consoleplayer])
+         {
++            doomtime_ipc_palette_changed(0);
+             I_SetPalette(W_CacheLumpName(DEH_String("PLAYPAL"), PU_CACHE));
+             inv_ptr = 0;
+             curpos = 0;
+diff --git a/src/heretic/r_draw.c b/src/heretic/r_draw.c
+index 4760cd59..a8beb0bb 100644
+--- a/src/heretic/r_draw.c
++++ b/src/heretic/r_draw.c
+@@ -15,6 +15,7 @@
+ //
+ // R_draw.c
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_str.h"
+ #include "r_local.h"
+@@ -353,6 +354,7 @@ void R_InitBuffer(int width, int height)
+         viewwindowy = 0;
+     else
+         viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
++    doomtime_ipc_windowxy(viewwindowx, viewwindowy);
+     for (i = 0; i < height; i++)
+         ylookup[i] = I_VideoBuffer + (i + viewwindowy) * SCREENWIDTH;
+ }
+diff --git a/src/heretic/r_main.c b/src/heretic/r_main.c
+index d54bb051..2003332a 100644
+--- a/src/heretic/r_main.c
++++ b/src/heretic/r_main.c
+@@ -534,6 +534,8 @@ void R_SetViewSize(int blocks, int detail)
+     setsizeneeded = true;
+     setblocks = blocks;
+     setdetail = detail;
++
++    setblocks = 3;
+ }
+ 
+ /*
+diff --git a/src/heretic/sb_bar.c b/src/heretic/sb_bar.c
+index c73feb60..1bebe6a2 100644
+--- a/src/heretic/sb_bar.c
++++ b/src/heretic/sb_bar.c
+@@ -16,6 +16,7 @@
+ 
+ // SB_bar.c
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_str.h"
+ #include "i_video.h"
+@@ -714,6 +715,7 @@ void SB_PaletteFlash(void)
+     {
+         sb_palette = palette;
+         pal = (byte *) W_CacheLumpNum(playpalette, PU_CACHE) + palette * 768;
++        doomtime_ipc_palette_changed(palette);
+         I_SetPalette(pal);
+     }
+ }
+diff --git a/src/hexen/CMakeLists.txt b/src/hexen/CMakeLists.txt
+index 6b4beed2..54c0bb5c 100644
+--- a/src/hexen/CMakeLists.txt
++++ b/src/hexen/CMakeLists.txt
+@@ -55,4 +55,4 @@ add_library(hexen STATIC
+                                 xddefs.h)
+ 
+ target_include_directories(hexen PRIVATE "../" "${CMAKE_CURRENT_BINARY_DIR}/../../")
+-target_link_libraries(hexen SDL2::SDL2 SDL2::mixer SDL2::net)
++target_link_libraries(hexen SDL2::SDL2 SDL2::mixer SDL2::net doomtime_ipc)
+diff --git a/src/hexen/f_finale.c b/src/hexen/f_finale.c
+index f2dfcc4c..2a819b63 100644
+--- a/src/hexen/f_finale.c
++++ b/src/hexen/f_finale.c
+@@ -269,6 +269,7 @@ static void InitializeFade(boolean fadeIn)
+             PaletteDelta[i] = FixedDiv(Palette[i], -70 * FRACUNIT);
+         }
+     }
++    // can't upload for a frame
+     I_SetPalette(RealPalette);
+ }
+ 
+@@ -300,6 +301,7 @@ static void FadePic(void)
+         Palette[i] += PaletteDelta[i];
+         RealPalette[i] = Palette[i] >> FRACBITS;
+     }
++    // can't upload for a frame
+     I_SetPalette(RealPalette);
+ }
+ 
+diff --git a/src/hexen/h2_main.c b/src/hexen/h2_main.c
+index cdc48407..b63b93e8 100644
+--- a/src/hexen/h2_main.c
++++ b/src/hexen/h2_main.c
+@@ -17,6 +17,7 @@
+ 
+ // HEADER FILES ------------------------------------------------------------
+ 
++#include <doomtime_ipc.h>
+ // haleyjd: removed WATCOMC
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -284,6 +285,7 @@ static boolean D_GrabMouseCallback(void)
+ static void D_HexenQuitMessage(void)
+ {
+     printf("\nHexen: Beyond Heretic\n");
++    doomtime_ipc_disconnected();
+ }
+ 
+ static void D_AddFile(char *filename)
+diff --git a/src/hexen/in_lude.c b/src/hexen/in_lude.c
+index a9e3f6d6..58c42690 100644
+--- a/src/hexen/in_lude.c
++++ b/src/hexen/in_lude.c
+@@ -16,6 +16,7 @@
+ 
+ #include <ctype.h>
+ 
++#include <doomtime_ipc.h>
+ #include "h2def.h"
+ #include "s_sound.h"
+ #include "i_system.h"
+@@ -98,6 +99,7 @@ extern void AM_Stop(void);
+ void IN_Start(void)
+ {
+     int i;
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE));
+     InitStats();
+     LoadPics();
+diff --git a/src/hexen/mn_menu.c b/src/hexen/mn_menu.c
+index cd5e404f..102f01ad 100644
+--- a/src/hexen/mn_menu.c
++++ b/src/hexen/mn_menu.c
+@@ -17,6 +17,7 @@
+ 
+ // HEADER FILES ------------------------------------------------------------
+ 
++#include <doomtime_ipc.h>
+ #include <ctype.h>
+ #include "h2def.h"
+ #include "doomkeys.h"
+@@ -1261,6 +1262,7 @@ boolean MN_Responder(event_t * event)
+                     askforquit = false;
+                     typeofask = 0;
+                     paused = false;
++                    doomtime_ipc_palette_changed(0);
+                     I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE));
+                     H2_StartTitle();    // go to intro/demo mode.
+                     return false;
+@@ -1774,6 +1776,7 @@ void MN_DeactivateMenu(void)
+ 
+ void MN_DrawInfo(void)
+ {
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE));
+     memcpy(I_VideoBuffer,
+            (byte *) W_CacheLumpNum(W_GetNumForName("TITLE") + InfoType,
+diff --git a/src/hexen/p_pspr.c b/src/hexen/p_pspr.c
+index 54c012e9..f3c97bd2 100644
+--- a/src/hexen/p_pspr.c
++++ b/src/hexen/p_pspr.c
+@@ -17,6 +17,7 @@
+ 
+ // HEADER FILES ------------------------------------------------------------
+ 
++#include <doomtime_ipc.h>
+ #include "h2def.h"
+ #include "m_random.h"
+ #include "p_local.h"
+@@ -1190,6 +1191,7 @@ void A_MStaffAttack(player_t * player, pspdef_t * psp)
+     {
+         player->damagecount = 0;
+         player->bonuscount = 0;
++        doomtime_ipc_palette_changed(STARTSCOURGEPAL);
+         I_SetPalette((byte *) W_CacheLumpNum(W_GetNumForName("playpal"),
+                                              PU_CACHE) +
+                      STARTSCOURGEPAL * 768);
+@@ -1213,6 +1215,7 @@ void A_MStaffPalette(player_t * player, pspdef_t * psp)
+         {                       // reset back to original playpal
+             pal = 0;
+         }
++        doomtime_ipc_palette_changed(pal);
+         I_SetPalette((byte *) W_CacheLumpNum(W_GetNumForName("playpal"),
+                                              PU_CACHE) + pal * 768);
+     }
+@@ -1932,6 +1935,7 @@ void A_CHolyAttack(player_t * player, pspdef_t * psp)
+     {
+         player->damagecount = 0;
+         player->bonuscount = 0;
++        doomtime_ipc_palette_changed(STARTHOLYPAL);
+         I_SetPalette((byte *) W_CacheLumpNum(W_GetNumForName("playpal"),
+                                              PU_CACHE) + STARTHOLYPAL * 768);
+     }
+@@ -1955,6 +1959,7 @@ void A_CHolyPalette(player_t * player, pspdef_t * psp)
+         {                       // reset back to original playpal
+             pal = 0;
+         }
++        doomtime_ipc_palette_changed(pal);
+         I_SetPalette((byte *) W_CacheLumpNum(W_GetNumForName("playpal"),
+                                              PU_CACHE) + pal * 768);
+     }
+diff --git a/src/hexen/p_user.c b/src/hexen/p_user.c
+index c7fa7a3f..a63cc1e2 100644
+--- a/src/hexen/p_user.c
++++ b/src/hexen/p_user.c
+@@ -15,6 +15,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include "h2def.h"
+ #include "m_random.h"
+ #include "i_system.h"
+@@ -418,6 +419,7 @@ void P_DeathThink(player_t * player)
+     {
+         if (player == &players[consoleplayer])
+         {
++            doomtime_ipc_palette_changed(0);
+             I_SetPalette((byte *) W_CacheLumpName("PLAYPAL", PU_CACHE));
+             inv_ptr = 0;
+             curpos = 0;
+diff --git a/src/hexen/r_draw.c b/src/hexen/r_draw.c
+index 13a0421b..ab7a9b5d 100644
+--- a/src/hexen/r_draw.c
++++ b/src/hexen/r_draw.c
+@@ -15,6 +15,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include "h2def.h"
+ #include "i_system.h"
+ #include "i_video.h"
+@@ -428,6 +429,7 @@ void R_InitBuffer(int width, int height)
+         viewwindowy = 0;
+     else
+         viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
++    doomtime_ipc_windowxy(viewwindowx, viewwindowy);
+     for (i = 0; i < height; i++)
+         ylookup[i] = I_VideoBuffer + (i + viewwindowy) * SCREENWIDTH;
+ }
 diff --git a/src/hexen/r_main.c b/src/hexen/r_main.c
-index b551a153..1e65a439 100644
+index b551a153..fca49e11 100644
 --- a/src/hexen/r_main.c
 +++ b/src/hexen/r_main.c
 @@ -21,6 +21,7 @@
@@ -120,6 +545,35 @@ index b551a153..1e65a439 100644
  int viewangleoffset;
  
  // haleyjd: removed WATCOMC
+@@ -536,6 +537,8 @@ void R_SetViewSize(int blocks, int detail)
+     setsizeneeded = true;
+     setblocks = blocks;
+     setdetail = detail;
++
++    setblocks = 3;
+ }
+ 
+ /*
+diff --git a/src/hexen/sb_bar.c b/src/hexen/sb_bar.c
+index 52a65824..2b97c3fb 100644
+--- a/src/hexen/sb_bar.c
++++ b/src/hexen/sb_bar.c
+@@ -17,6 +17,7 @@
+ 
+ // HEADER FILES ------------------------------------------------------------
+ 
++#include <doomtime_ipc.h>
+ #include "h2def.h"
+ #include "i_cdmus.h"
+ #include "i_video.h"
+@@ -968,6 +969,7 @@ void SB_PaletteFlash(boolean forceChange)
+     {
+         sb_palette = palette;
+         pal = (byte *) W_CacheLumpNum(PlayPalette, PU_CACHE) + palette * 768;
++        doomtime_ipc_palette_changed(palette);
+         I_SetPalette(pal);
+     }
+ }
 diff --git a/src/i_video.c b/src/i_video.c
 index 9d875461..510d05e3 100644
 --- a/src/i_video.c
@@ -164,11 +618,29 @@ index 9d875461..510d05e3 100644
  
      // SDL2-TODO UpdateFocus();
      UpdateGrab();
+diff --git a/src/strife/CMakeLists.txt b/src/strife/CMakeLists.txt
+index 06b17a6b..249a67df 100644
+--- a/src/strife/CMakeLists.txt
++++ b/src/strife/CMakeLists.txt
+@@ -70,4 +70,4 @@ set(STRIFE_SOURCES
+ add_library(strife STATIC ${STRIFE_SOURCES})
+ 
+ target_include_directories(strife PRIVATE "../" "../../win32/" "${CMAKE_CURRENT_BINARY_DIR}/../../")
+-target_link_libraries(strife textscreen SDL2::SDL2 SDL2::mixer SDL2::net)
++target_link_libraries(strife textscreen SDL2::SDL2 SDL2::mixer SDL2::net doomtime_ipc)
 diff --git a/src/strife/d_main.c b/src/strife/d_main.c
-index d56e2832..2403118b 100644
+index d56e2832..409926d3 100644
 --- a/src/strife/d_main.c
 +++ b/src/strife/d_main.c
-@@ -89,6 +89,7 @@
+@@ -20,6 +20,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <ctype.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -89,6 +90,7 @@
  //  calls all ?_Responder, ?_Ticker, and ?_Drawer,
  //  calls I_GetTime, I_StartFrame, and I_StartTic
  //
@@ -176,3 +648,95 @@ index d56e2832..2403118b 100644
  void D_DoomLoop (void);
  
  static boolean D_AddFile(char *filename);
+@@ -294,7 +296,10 @@ void D_Display (void)
+ 
+     // clean up border stuff
+     if (gamestate != oldgamestate && gamestate != GS_LEVEL)
++    {
++        doomtime_ipc_palette_changed(0);
+         I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
++    }
+ 
+     // see if the border needs to be initially drawn
+     if (gamestate == GS_LEVEL && oldgamestate != GS_LEVEL)
+@@ -1101,6 +1106,7 @@ void PrintGameVersion(void)
+ static void D_Endoom(void)
+ {
+     byte *endoom;
++    doomtime_ipc_disconnected();
+ 
+     // Don't show ENDOOM if we have it disabled, or we're running
+     // in screensaver or control test mode. Only show it once the
+diff --git a/src/strife/m_menu.c b/src/strife/m_menu.c
+index 31d2ee07..c2541e97 100644
+--- a/src/strife/m_menu.c
++++ b/src/strife/m_menu.c
+@@ -2098,6 +2098,7 @@ boolean M_Responder (event_t* ev)
+             if (usegamma > 4)
+                 usegamma = 0;
+             players[consoleplayer].message = DEH_String(gammamsg[usegamma]);
++            doomtime_ipc_palette_changed(0);
+             I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
+             return true;
+         }
+diff --git a/src/strife/r_draw.c b/src/strife/r_draw.c
+index de6d1d0a..eddb3e93 100644
+--- a/src/strife/r_draw.c
++++ b/src/strife/r_draw.c
+@@ -21,6 +21,7 @@
+ 
+ 
+ 
++#include <doomtime_ipc.h>
+ #include "doomdef.h"
+ #include "deh_main.h"
+ 
+@@ -793,6 +794,7 @@ R_InitBuffer
+ 	viewwindowy = 0; 
+     else 
+ 	viewwindowy = (SCREENHEIGHT-SBARHEIGHT-height) >> 1; 
++    doomtime_ipc_windowxy(viewwindowx, viewwindowy);
+ 
+     // Preclaculate all row offsets.
+     for (i=0 ; i<height ; i++) 
+diff --git a/src/strife/r_main.c b/src/strife/r_main.c
+index faaf4b07..bfa32b06 100644
+--- a/src/strife/r_main.c
++++ b/src/strife/r_main.c
+@@ -661,6 +661,8 @@ R_SetViewSize
+     setsizeneeded = true;
+     setblocks = blocks;
+     setdetail = detail;
++
++    setblocks = 3;
+ }
+ 
+ 
+diff --git a/src/strife/st_stuff.c b/src/strife/st_stuff.c
+index 65ddc0ec..63e8d812 100644
+--- a/src/strife/st_stuff.c
++++ b/src/strife/st_stuff.c
+@@ -20,6 +20,7 @@
+ 
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <stdio.h>
+ 
+ #include "i_system.h"
+@@ -901,6 +902,7 @@ void ST_doPaletteStuff(void)
+     {
+         st_palette = palette;
+         pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
++        doomtime_ipc_palette_changed(palette);
+         I_SetPalette (pal);
+     }
+ 
+@@ -1597,6 +1599,7 @@ void ST_Stop (void)
+     if (st_stopped)
+         return;
+ 
++    doomtime_ipc_palette_changed(0);
+     I_SetPalette (W_CacheLumpNum (lu_palette, PU_CACHE));
+ 
+     st_stopped = true;

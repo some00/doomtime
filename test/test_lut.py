@@ -2,7 +2,7 @@ import test_lut_module as lut
 import numpy as np
 import numpy.testing as npt
 import pytest
-from doomtime_rgb_to_packed_rgb444 import rgb_to_packed_rgb444
+from rgb_to_packed_rgb444 import rgb_to_packed_rgb444
 
 np.set_printoptions(formatter={'int': lambda x: f"{x:02x}"})
 

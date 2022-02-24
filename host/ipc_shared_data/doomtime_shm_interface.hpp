@@ -10,7 +10,7 @@ constexpr int WIDTH = 320;
 constexpr int HEIGHT = 200;
 namespace bi = boost::interprocess;
 using frame_t = std::array<uint8_t, WIDTH * HEIGHT>;
-using palettes_t = std::array<std::array<uint8_t, 256 * 3>, 24>; // 256 color 24 for hexen
+using palettes_t = std::array<std::array<uint8_t, 256 * 3>, 28>; // 256 color 28 for hexen
 struct shared_memory_buffer
 {
     bi::interprocess_semaphore nempty{0};
@@ -20,6 +20,7 @@ struct shared_memory_buffer
     bool disconnected{false};
     palettes_t palettes;
     size_t palette_count{0};
+    int windowx{0}, windowy{0};
 };
 constexpr auto memory_name = "doomtime_ipc_shared_memory";
 inline bool wait(bi::interprocess_semaphore& sem) {

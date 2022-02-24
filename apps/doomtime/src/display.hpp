@@ -29,6 +29,7 @@ private:
     os_stack_t display_task_stack[DISPLAY_TASK_STACK_SIZE];
     pal_t palette_[28];
     uint16_t pal_progress_;
+    // generated with scripts/background.py
     static const uint8_t background_[48][48 * BPP / CHAR_BIT];
     pal_input_t input_;
     os_sem producer_;

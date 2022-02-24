@@ -5,8 +5,8 @@
 using namespace doomtime;
 using namespace doomtime::client;
 
-constexpr auto Y = frame_buffer_t::Y;
-constexpr auto X = frame_buffer_t::X;
+constexpr auto Y = 60;
+constexpr auto X = 112;
 
 std::string fake_to_packed_rgb44(const pal_t&)
 {
@@ -69,7 +69,7 @@ TEST(test_frame_buffer, pop_one)
     fi.at<uint8_t>(Y + HEIGHT - 1, X + (WIDTH * 2) - 2) = 0x14;
 
     frame_buffer_t fb(10, fake_to_packed_rgb44);
-    fb.push(frame, pal_idx);
+    fb.push(frame, pal_idx, {X, Y});
     auto [ok, pkts] = fb.pop();
     // popped one element
     ASSERT_TRUE(ok);
@@ -110,7 +110,7 @@ TEST(test_frame_buffer, pop_one_random)
 {
     frame_buffer_t fb(1, fake_to_packed_rgb44);
     auto [frame, pal_idx] = random_frame();
-    fb.push(frame, pal_idx);
+    fb.push(frame, pal_idx, {X, Y});
     auto [ok, pkts] = fb.pop(1);
     ASSERT_TRUE(ok);
     check_frame(frame, pkts);
@@ -125,7 +125,7 @@ TEST(test_frame_buffer, pop_drop_frame)
     {
         auto [frame, idx] = random_frame();
         frames.emplace_back(frame, idx);
-        fb.push(frame, idx);
+        fb.push(frame, idx, {X, Y});
     }
     auto [ok, pkts] = fb.pop(1);
     ASSERT_TRUE(ok);
@@ -147,7 +147,7 @@ TEST_P(test_frame_buffer_drop_frames, drop_frames)
     {
         auto [frame, idx] = random_frame();
         frames.emplace_back(frame, idx);
-        fb.push(frame, idx);
+        fb.push(frame, idx, {X, Y});
     }
     auto [ok, pkts] = fb.pop(pop);
     ASSERT_TRUE(ok);
@@ -176,7 +176,7 @@ TEST(test_frame_buffer, pop_no_wait_twice)
 {
     frame_buffer_t fb(1, fake_to_packed_rgb44);
     auto [frame, pal_idx] = random_frame();
-    fb.push(frame, pal_idx);
+    fb.push(frame, pal_idx, {X, Y});
 
     {
         auto [ok, pkts] = fb.pop(false);

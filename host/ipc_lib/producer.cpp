@@ -54,6 +54,12 @@ void producer_t::set_palettes(const uint8_t* pals, size_t pal_count)
     data_->palette_count = pal_count;
 }
 
+void producer_t::set_windowxy(int windowx, int windowy)
+{
+    data_->windowx = windowx;
+    data_->windowy = windowy;
+}
+
 void producer_t::frame_ready(const uint8_t* pixels)
 {
     std::memcpy(
@@ -97,7 +103,14 @@ void producer_t::palette_changed(uint8_t pal_idx)
 
 void doomtime_ipc_set_palettes(const uint8_t* pals, size_t pal_count)
 {
+    fmt::print("set palettes, count: {}\n", pal_count);
     producer_t::get().set_palettes(pals, pal_count);
+}
+
+void doomtime_ipc_windowxy(int windowx, int windowy)
+{
+    fmt::print("window: ({}, {})\n", windowx, windowy);
+    producer_t::get().set_windowxy(windowx, windowy);
 }
 
 void doomtime_ipc_frame_ready(const uint8_t* pixels)

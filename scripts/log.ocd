@@ -1,0 +1,5 @@
+source openocd-bcm.ocd
+init
+rtt setup 0x200000d0 2048 "SEGGER RTT"
+rtt start
+rtt server start 9090 0

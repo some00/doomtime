@@ -1,0 +1,8 @@
+source openocd-bcm.ocd
+init
+reset halt
+mww 0x40000600 0;mww 0x40000604 0;mww 0x40000608 1;               mww 0x40000610 0;mww 0x40000614 0;
+flash write_image erase mynewt.elf.bin 0x0000
+flash write_image erase doomtime.img 0x8000
+reset
+shutdown

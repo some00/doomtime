@@ -1,0 +1,14 @@
+syscfg.vals:
+    BLE_STORE_CONFIG_PERSIST: 0
+    BLE_SVC_GAP_DEVICE_NAME: '"doomtime"'
+    LOG_LEVEL: 2
+    OS_TICKS_PER_SEC: 1024
+    MSYS_1_BLOCK_COUNT: 12
+    MSYS_1_BLOCK_SIZE: 256
+    BLEPRPH_LE_PHY_SUPPORT: 1
+    BLE_LL_CFG_FEAT_LE_2M_PHY: 1
+    BLE_LL_PRIO: 0
+syscfg.defs:
+  DOOMTIME_FPS_ON_MOT_PIN:
+    description: "Toggle vibrator motor pin when frame is rendered"
+    value: 1

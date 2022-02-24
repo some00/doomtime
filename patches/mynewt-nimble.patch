@@ -1,0 +1,13 @@
+diff --git a/porting/npl/mynewt/include/nimble/nimble_npl_os.h b/porting/npl/mynewt/include/nimble/nimble_npl_os.h
+index 8d8ccda3..d7c1a53e 100644
+--- a/porting/npl/mynewt/include/nimble/nimble_npl_os.h
++++ b/porting/npl/mynewt/include/nimble/nimble_npl_os.h
+@@ -253,7 +253,7 @@ ble_npl_time_ms_to_ticks(uint32_t ms, ble_npl_time_t *out_ticks)
+ static inline ble_npl_error_t
+ ble_npl_time_ticks_to_ms(ble_npl_time_t ticks, uint32_t *out_ms)
+ {
+-    return os_time_ticks_to_ms(ticks, out_ms);
++    return (ble_npl_error_t)os_time_ticks_to_ms(ticks, out_ms);
+ }
+ 
+ static inline ble_npl_time_t

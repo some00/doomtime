@@ -1,0 +1,167 @@
+diff --git a/src/gatt-client.c b/src/gatt-client.c
+index 20c3fbec2..0a70c34c6 100644
+--- a/src/gatt-client.c
++++ b/src/gatt-client.c
+@@ -1069,6 +1069,18 @@ fail:
+ 	return btd_error_not_supported(msg);
+ }
+ 
++static void pending_request_cb(unsigned int pending, void* user_data)
++{
++	struct characteristic *chrc = user_data;
++    if (chrc->write_io)
++    {
++        struct iovec iov;
++        iov.iov_base = &pending;
++        iov.iov_len = sizeof(pending);
++        io_send(chrc->write_io->io, &iov, 1);
++    }
++}
++
+ static bool sock_read(struct io *io, void *user_data)
+ {
+ 	struct characteristic *chrc = user_data;
+@@ -1095,9 +1107,9 @@ static bool sock_read(struct io *io, void *user_data)
+ 	if (!gatt || bytes_read == 0)
+ 		return false;
+ 
+-	bt_gatt_client_write_without_response(gatt, chrc->value_handle,
++	bt_gatt_client_write_without_response_with_pending_report(gatt, chrc->value_handle,
+ 					chrc->props & BT_GATT_CHRC_PROP_AUTH,
+-					buf, bytes_read);
++					buf, bytes_read, pending_request_cb, chrc);
+ 
+ 	return true;
+ }
+diff --git a/src/shared/att.c b/src/shared/att.c
+index 58f23dfcb..894a7d9ff 100644
+--- a/src/shared/att.c
++++ b/src/shared/att.c
+@@ -1867,3 +1867,8 @@ bool bt_att_has_crypto(struct bt_att *att)
+ 
+ 	return att->crypto ? true : false;
+ }
++
++unsigned int bt_att_write_queue_length(struct bt_att* att)
++{
++	return queue_length(att->write_queue);
++}
+diff --git a/src/shared/att.h b/src/shared/att.h
+index ed20bb5b8..3c6e3300f 100644
+--- a/src/shared/att.h
++++ b/src/shared/att.h
+@@ -107,3 +107,4 @@ bool bt_att_set_local_key(struct bt_att *att, uint8_t sign_key[16],
+ bool bt_att_set_remote_key(struct bt_att *att, uint8_t sign_key[16],
+ 			bt_att_counter_func_t func, void *user_data);
+ bool bt_att_has_crypto(struct bt_att *att);
++unsigned int bt_att_write_queue_length(struct bt_att* att);
+diff --git a/src/shared/gatt-client.c b/src/shared/gatt-client.c
+index f15466673..8801b799b 100644
+--- a/src/shared/gatt-client.c
++++ b/src/shared/gatt-client.c
+@@ -129,6 +129,8 @@ struct request {
+ 	unsigned int att_id;
+ 	void *data;
+ 	void (*destroy)(void *);
++	bt_gatt_client_pending_report_callback_t pending_report_cb;
++	void *pending_report_user_data;
+ };
+ 
+ static struct request *request_ref(struct request *req)
+@@ -153,6 +155,8 @@ static struct request *request_create(struct bt_gatt_client *client)
+ 	queue_push_tail(client->pending_requests, req);
+ 	req->client = client;
+ 	req->id = client->next_request_id++;
++	req->pending_report_cb = NULL;
++	req->pending_report_user_data = NULL;
+ 
+ 	return request_ref(req);
+ }
+@@ -170,6 +174,12 @@ static void request_unref(void *data)
+ 	if (!req->removed)
+ 		queue_remove(req->client->pending_requests, req);
+ 
++	if (req->pending_report_cb)
++	{
++		req->pending_report_cb(bt_att_write_queue_length(req->client->att),
++                               req->pending_report_user_data);
++	}
++
+ 	free(req);
+ }
+ 
+@@ -3008,6 +3018,48 @@ unsigned int bt_gatt_client_write_without_response(
+ 	return req->id;
+ }
+ 
++unsigned int bt_gatt_client_write_without_response_with_pending_report(
++					struct bt_gatt_client *client,
++					uint16_t value_handle,
++					bool signed_write,
++					const uint8_t *value, uint16_t length,
++					bt_gatt_client_pending_report_callback_t pending_report_cb, void *user_data) {
++	uint8_t pdu[2 + length];
++	struct request *req;
++	int security;
++	uint8_t op;
++
++	if (!client)
++		return 0;
++
++	req = request_create(client);
++	if (!req)
++		return 0;
++
++	/* Only use signed write if unencrypted */
++	if (signed_write) {
++		security = bt_att_get_security(client->att, NULL);
++		op = security > BT_SECURITY_LOW ?  BT_ATT_OP_WRITE_CMD :
++						BT_ATT_OP_SIGNED_WRITE_CMD;
++	} else
++		op = BT_ATT_OP_WRITE_CMD;
++
++	put_le16(value_handle, pdu);
++	memcpy(pdu + 2, value, length);
++
++	req->pending_report_cb = pending_report_cb;
++	req->pending_report_user_data = user_data;
++	req->att_id = bt_att_send(client->att, op, pdu, sizeof(pdu), NULL, req,
++								request_unref);
++	if (!req->att_id) {
++		request_unref(req);
++		return 0;
++	}
++
++	return req->id;
++}
++
++
+ struct write_op {
+ 	struct bt_gatt_client *client;
+ 	bt_gatt_client_callback_t callback;
+diff --git a/src/shared/gatt-client.h b/src/shared/gatt-client.h
+index 10900168b..eaef26502 100644
+--- a/src/shared/gatt-client.h
++++ b/src/shared/gatt-client.h
+@@ -56,6 +56,8 @@ typedef void (*bt_gatt_client_register_callback_t)(uint16_t att_ecode,
+ typedef void (*bt_gatt_client_service_changed_callback_t)(uint16_t start_handle,
+ 							uint16_t end_handle,
+ 							void *user_data);
++typedef void (*bt_gatt_client_pending_report_callback_t)(unsigned int pending,
++							void* user_data);
+ 
+ bool bt_gatt_client_is_ready(struct bt_gatt_client *client);
+ unsigned int bt_gatt_client_ready_register(struct bt_gatt_client *client,
+@@ -102,6 +104,12 @@ unsigned int bt_gatt_client_write_without_response(
+ 					uint16_t value_handle,
+ 					bool signed_write,
+ 					const uint8_t *value, uint16_t length);
++unsigned int bt_gatt_client_write_without_response_with_pending_report(
++					struct bt_gatt_client *client,
++					uint16_t value_handle,
++					bool signed_write,
++					const uint8_t *value, uint16_t length,
++					bt_gatt_client_pending_report_callback_t, void *user_data);
+ unsigned int bt_gatt_client_write_value(struct bt_gatt_client *client,
+ 					uint16_t value_handle,
+ 					const uint8_t *value, uint16_t length,

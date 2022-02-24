@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.18)
+project(doomtime)
+
+option(ENABLE_TESTING "Enable testing" OFF)
+if (ENABLE_TESTING)
+    enable_testing()
+    set(doomtime_src ${CMAKE_CURRENT_SOURCE_DIR}/apps/doomtime/src)
+    set(python_src ${CMAKE_CURRENT_SOURCE_DIR}/python)
+    find_package(pybind11 REQUIRED)
+    find_package(Eigen3 REQUIRED)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_subdirectory(test)
+endif()

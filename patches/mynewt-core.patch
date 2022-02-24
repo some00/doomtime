@@ -1,0 +1,19 @@
+diff --git a/hw/mcu/nordic/nrf52xxx/src/hal_spi.c b/hw/mcu/nordic/nrf52xxx/src/hal_spi.c
+index 3ecd6a928..5a5f9f048 100644
+--- a/hw/mcu/nordic/nrf52xxx/src/hal_spi.c
++++ b/hw/mcu/nordic/nrf52xxx/src/hal_spi.c
+@@ -212,12 +212,12 @@ nrf52_irqm_handler(struct nrf52_hal_spi *spi)
+             }
+             spim->TASKS_START = 1;
+         } else {
++            spi->spi_xfr_flag = 0;
++            spim->INTENCLR = SPIM_INTENSET_END_Msk;
+             if (spi->txrx_cb_func) {
+                 spi->txrx_cb_func(spi->txrx_cb_arg, spi->nhs_buflen);
+ 
+             }
+-            spi->spi_xfr_flag = 0;
+-            spim->INTENCLR = SPIM_INTENSET_END_Msk;
+         }
+     }
+ }

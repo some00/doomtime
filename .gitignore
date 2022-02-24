@@ -1,0 +1,16 @@
+.app.db
+.app
+bin
+obj
+tags
+.gdb_history
+.gdb_out
+.gdb_cmds
+*~
+.DS_Store
+*.swp
+*.swo
+repos
+**/__pycache__
+**/_build
+coverage

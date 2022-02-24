@@ -1,0 +1,178 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b73c7984..5edeb2de 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -67,6 +67,7 @@ configure_file(src/resource.rc.in src/resource.rc)
+ configure_file(src/setup-res.rc.in src/setup-res.rc)
+ configure_file(src/setup/setup-manifest.xml.in src/setup/setup-manifest.xml)
+ 
++add_subdirectory(doomtime/host)
+ foreach(SUBDIR textscreen opl pcsound src)
+     add_subdirectory("${SUBDIR}")
+ endforeach()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index b498ed29..ae9bd669 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -121,7 +121,7 @@ set(DEHACKED_SOURCE_FILES
+ set(SOURCE_FILES ${COMMON_SOURCE_FILES} ${GAME_SOURCE_FILES})
+ set(SOURCE_FILES_WITH_DEH ${SOURCE_FILES} ${DEHACKED_SOURCE_FILES})
+ 
+-set(EXTRA_LIBS SDL2::SDL2main SDL2::SDL2 SDL2::mixer SDL2::net textscreen pcsound opl)
++set(EXTRA_LIBS SDL2::SDL2main SDL2::SDL2 SDL2::mixer SDL2::net textscreen pcsound opl doomtime_ipc)
+ if(SAMPLERATE_FOUND)
+     list(APPEND EXTRA_LIBS samplerate::samplerate)
+ endif()
+diff --git a/src/doom/CMakeLists.txt b/src/doom/CMakeLists.txt
+index 0310910a..1a2c6e0e 100644
+--- a/src/doom/CMakeLists.txt
++++ b/src/doom/CMakeLists.txt
+@@ -68,4 +68,4 @@ add_library(doom STATIC
+             wi_stuff.c      wi_stuff.h)
+ 
+ target_include_directories(doom PRIVATE "../" "${CMAKE_CURRENT_BINARY_DIR}/../../")
+-target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net)
++target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net doomtime_ipc)
+diff --git a/src/doom/d_main.c b/src/doom/d_main.c
+index cd5a74be..8838677c 100644
+--- a/src/doom/d_main.c
++++ b/src/doom/d_main.c
+@@ -20,6 +20,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <ctype.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -76,6 +77,8 @@
+ 
+ #include "d_main.h"
+ 
++const int NUMPALS = 14;
++
+ //
+ // D-DoomLoop()
+ // Not a globally visible function,
+@@ -1167,6 +1170,7 @@ void PrintGameVersion(void)
+ static void D_Endoom(void)
+ {
+     byte *endoom;
++    doomtime_ipc_disconnected();
+ 
+     // Don't show ENDOOM if we have it disabled, or we're running
+     // in screensaver or control test mode. Only show it once the
+diff --git a/src/doom/r_main.c b/src/doom/r_main.c
+index 567ea4be..f1d82527 100644
+--- a/src/doom/r_main.c
++++ b/src/doom/r_main.c
+@@ -658,6 +658,9 @@ R_SetViewSize
+     setsizeneeded = true;
+     setblocks = blocks;
+     setdetail = detail;
++
++    setblocks = 3;
++    setdetail = 1;
+ }
+ 
+ 
+diff --git a/src/doom/st_stuff.c b/src/doom/st_stuff.c
+index 95e24c16..e28adb9e 100644
+--- a/src/doom/st_stuff.c
++++ b/src/doom/st_stuff.c
+@@ -20,6 +20,7 @@
+ 
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <stdio.h>
+ #include <ctype.h>
+ 
+@@ -1019,6 +1020,7 @@ void ST_doPaletteStuff(void)
+     {
+ 	st_palette = palette;
+ 	pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
++    doomtime_ipc_palette_changed(palette);
+ 	I_SetPalette (pal);
+     }
+ 
+diff --git a/src/heretic/d_main.c b/src/heretic/d_main.c
+index b2aeab8d..81b67808 100644
+--- a/src/heretic/d_main.c
++++ b/src/heretic/d_main.c
+@@ -53,6 +53,7 @@
+ #define STARTUP_WINDOW_X 17
+ #define STARTUP_WINDOW_Y 7
+ 
++const int NUMPALS = 14;
+ GameMode_t gamemode = indetermined;
+ const char *gamedescription = "unknown";
+ 
+diff --git a/src/hexen/r_main.c b/src/hexen/r_main.c
+index b551a153..1e65a439 100644
+--- a/src/hexen/r_main.c
++++ b/src/hexen/r_main.c
+@@ -21,6 +21,7 @@
+ #include "m_bbox.h"
+ #include "r_local.h"
+ 
++const int NUMPALS = 28;
+ int viewangleoffset;
+ 
+ // haleyjd: removed WATCOMC
+diff --git a/src/i_video.c b/src/i_video.c
+index 9d875461..510d05e3 100644
+--- a/src/i_video.c
++++ b/src/i_video.c
+@@ -17,6 +17,7 @@
+ //
+ 
+ 
++#include <doomtime_ipc.h>
+ #include <stdlib.h>
+ 
+ #include "SDL.h"
+@@ -52,6 +53,7 @@
+ // These are (1) the window (or the full screen) that our game is rendered to
+ // and (2) the renderer that scales the texture (see below) into this window.
+ 
++extern const int NUMPALS;
+ static SDL_Window *screen;
+ static SDL_Renderer *renderer;
+ 
+@@ -777,6 +779,7 @@ void I_FinishUpdate (void)
+     // Blit from the paletted 8-bit screen buffer to the intermediate
+     // 32-bit RGBA buffer that we can load into the texture.
+ 
++    doomtime_ipc_frame_ready(I_VideoBuffer);
+     SDL_LowerBlit(screenbuffer, &blit_rect, argbbuffer, &blit_rect);
+ 
+     // Update the intermediate texture with the contents of the RGBA buffer.
+@@ -801,6 +804,7 @@ void I_FinishUpdate (void)
+     // Draw!
+ 
+     SDL_RenderPresent(renderer);
++    doomtime_ipc_frame_rendered();
+ 
+     // Restore background and undo the disk indicator, if it was drawn.
+     V_RestoreDiskBackground();
+@@ -1427,6 +1431,7 @@ void I_InitGraphics(void)
+     doompal = W_CacheLumpName(DEH_String("PLAYPAL"), PU_CACHE);
+     I_SetPalette(doompal);
+     SDL_SetPaletteColors(screenbuffer->format->palette, palette, 0, 256);
++    doomtime_ipc_set_palettes(doompal, NUMPALS);
+ 
+     // SDL2-TODO UpdateFocus();
+     UpdateGrab();
+diff --git a/src/strife/d_main.c b/src/strife/d_main.c
+index d56e2832..2403118b 100644
+--- a/src/strife/d_main.c
++++ b/src/strife/d_main.c
+@@ -89,6 +89,7 @@
+ //  calls all ?_Responder, ?_Ticker, and ?_Drawer,
+ //  calls I_GetTime, I_StartFrame, and I_StartTic
+ //
++const int NUMPALS = 14;
+ void D_DoomLoop (void);
+ 
+ static boolean D_AddFile(char *filename);

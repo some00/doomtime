@@ -322,6 +322,7 @@ void display_t::spi_txrx_callback(int len)
         }
         rc = hal_spi_txrx_noblock(
             SPI_NUM, output_[output_tail_], nullptr, sizeof(pal_output_t));
+        assert(rc == 0);
         col_acquired_ = false;
         if (++col_count_ == SCREEN_WIDTH)
         {

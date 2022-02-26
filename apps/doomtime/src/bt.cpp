@@ -166,6 +166,7 @@ void bt_t::advertise()
     MODLOG_DFLT(INFO, "start advertise\n");
     uint8_t own_addr_type;
     int rc = ble_hs_id_infer_auto(0, &own_addr_type);
+    assert(rc == 0);
 
     struct ble_hs_adv_fields fields = {0};
     fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
@@ -183,6 +184,7 @@ void bt_t::advertise()
     adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
     rc = ble_gap_adv_start(
         own_addr_type, nullptr, BLE_HS_FOREVER, &adv_params, s_on_gap_event, this);
+    assert(rc == 0);
 }
 
 int bt_t::on_gap_event(ble_gap_event* event)

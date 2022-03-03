@@ -36,9 +36,10 @@
 
 [![picture][product-screenshot]](https://github.com/some00/doomtime)
 
-The goal of this project is to stream Doom, Strife, Heretic or Hexen from Linux using BLE and the
-BlueZ stack to a PineTime smartwatch. OTA isn't implemented and isn't planned to be. I believe this
-use case for the PineTime doesn't have a partical use and choose the DevKit only as a target.
+The goal of this project is to stream Doom, Strife, Heretic or Hexen from Linux to a PineTime
+smartwatch using BLE and the BlueZ stack. OTA isn't implemented and it isn't planned to be. I
+believe this use case for the PineTime doesn't have a partical use and I chose the DevKit only as a
+target.
 My aim was to find a way to achive this and improve my skills along the way.
 
 
@@ -48,9 +49,9 @@ My aim was to find a way to achive this and improve my skills along the way.
 <!-- GETTING STARTED -->
 ## Getting Started
 
-The repository contains source for the firmware, modifications needed for Chocolate Doom, Bluez and
-a client application. Rest of this section assumes Debian bullseye. Arch Linux was also tested, but
-the process isn't documented.
+The repository contains the source for the firmware, modifications needed for Chocolate Doom, Bluez
+and a client application. The rest of this section assumes Debian bullseye. Arch Linux was also
+tested, but the process isn't documented.
 
 
 ### Clone Chocolate Doom Fork
@@ -64,7 +65,7 @@ git submodule update --init
 ### Patch and Build BlueZ
 BlueZ uses domain sockets for handling BLE writes without response. I needed to know the number of
 packets queued in its internal buffer to keep latency low and the FPS high. This patch adds the
-functionality to write back the number of queued packet after each transmission on the domain
+functionality to write back the number of queued packets after each transmission on the domain
 socket originally intended to be written only.
 
 1. Install BlueZ dependencies
@@ -147,7 +148,7 @@ socket originally intended to be written only.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-WAD file for the game you want to play (Doom is show bellow), a bluetooth adapter and a PineTime
+WAD file for the game you want to play (Doom is shown below), a bluetooth adapter and a PineTime
 are needed for these steps.
 
 
@@ -218,15 +219,15 @@ displayed on the watch. PXX values are percentiles for statistics.
 
 TODO insert diagram
 
-Although I have failed to reach my goal of 35 FPS I think the game is still playable. I tested with
-various bluetooth adapters and the controller adopts quite well with a setting time of 20-30
+Although I have failed to reach my goal of 35 FPS, I think the game is still playable. I tested
+with various bluetooth adapters and the controller adopts quite well with a setting time of 20-30
 seconds. Video as proof.
 
 TODO embed video
 
-This was recorded in 50 FPS and by checking the frames I estimate the delay between the two
-displays around 3-6 camera frames (0.06-0.12s). This was also the point where I noticed that the
-last column is missing from the background and kept is as-is.
+The video was recorded in 50 FPS. By checking the frames, I estimate that the delay between the two
+displays is around 3-6 camera frames (0.06-0.12s). This was also the point where I noticed that the
+last column is missing from the background and kept it as-is.
 
 
 ## License

@@ -236,6 +236,8 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Use i
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+Readme template from [othneildrew].
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [product-screenshot]: images/picture.png
@@ -244,3 +246,4 @@ Distributed under the MIT License. See `LICENSE.txt` for more information. Use i
 [pine64_wiring]: https://wiki.pine64.org/wiki/PineTime_Devkit_Wiring
 [pine64_prog]: https://wiki.pine64.org/wiki/Reprogramming_the_PineTime
 [cd_guide]: https://www.chocolate-doom.org/wiki/index.php/User_guide
+[othneildrew]: https://github.com/othneildrew/Best-README-Template

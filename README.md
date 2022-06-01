@@ -11,7 +11,7 @@
   <p align="center">
     Stream Doom from Linux to PineTime smartwatch.
     <br />
-    <a href="https://github.com/some00/doomtime">View Demo</a>
+    <a href="https://archive.org/details/doom-pinetime">View Demo</a>
   </p>
 </div>
 
@@ -34,7 +34,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About the Project
 
-[![picture][product-screenshot]](https://github.com/some00/doomtime)
+[![picture][product-screenshot]][video]
 
 The goal of this project is to stream Doom, Strife, Heretic or Hexen from Linux to a PineTime
 smartwatch using BLE and the BlueZ stack. OTA isn't implemented and it isn't planned to be. I
@@ -219,9 +219,7 @@ displayed on the watch. PXX values are percentiles for statistics.
 
 Although I have failed to reach my goal of 35 FPS, I think the game is still playable. I tested
 with various bluetooth adapters and the controller adopts quite well with a setting time of 20-30
-seconds. Video as proof.
-
-TODO embed video
+seconds. [Video as proof][video].
 
 The video was recorded in 50 FPS. By checking the frames, I estimate that the delay between the two
 displays is around 3-6 camera frames (0.06-0.12s). This was also the point where I noticed that the
@@ -248,3 +246,4 @@ Readme template from [othneildrew].
 [cd_guide]: https://www.chocolate-doom.org/wiki/index.php/User_guide
 [othneildrew]: https://github.com/othneildrew/Best-README-Template
 [benchdia]: images/bench.png
+[video]: https://archive.org/details/doom-pinetime

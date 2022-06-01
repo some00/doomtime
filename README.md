@@ -79,12 +79,12 @@ socket originally intended to be written only.
     ```
 3. Patch
     ```sh
-    cd bluez
-    patch -p1 < ../chocolate-doom/doomtime/patches/bluez.patch
+    patch -d bluez -p1 < chocolate-doom/doomtime/patches/bluez.patch
     ```
 4. Configure and build
     ```sh
-    ./boostrap
+    cd bluez
+    ./bootstrap
     ./configure --prefix=$PWD/_install --enable-external-ell
     make
     ```
@@ -111,7 +111,8 @@ socket originally intended to be written only.
     ```sh
     apt install python3-numpy
     ```
-2. Download and extract [GNU Arm Embedded Toolchain License][toolchain]
+2. Download and extract [GNU Arm Embedded Toolchain][toolchain]. Version 9-2020-q2 is proven to be
+   working.
 3. Add `<toolchain-root>/bin` to your `PATH` enviroment variable.
 4. Install [newt][newt-install].
 5. Upgrade newt.
@@ -122,24 +123,21 @@ socket originally intended to be written only.
 6. Patch apache-mynewt-core. This patch is needed to be able start an SPI DMA write from the
    interrupt handler of a previous write when data is already available.
     ```sh
-    cd doomtime/repos/apache-mynewt-core
-    patch -p1 < ../../patches/mynewt-core.patch
+    patch -d repos/apache-mynewt-core -p1 < patches/mynewt-core.patch
     ```
 7. Patch apache-mynewt-nimble. This patch is a compile fix for a nimble header when compiled with
    c++.
     ```sh
-    cd ../apache-mynewt-nimble
-    patch -p1 < ../../patches/mynewt-nimble.patch
+    patch -d repos/apache-mynewt-nimble -p1 < patches/mynewt-nimble.patch
     ```
 8. Go back to the project root and build bootloader and app.
     ```sh
-    cd doomtime
     newt build boot-pinetime
     newt build doomtime
     ```
 9. For flashing I used a Raspberry Pi and bitbanged SWD on GPIO. My scripts for openocd are in the
    `scripts` folder. Pine64 Wiki has descriptions for [wiring][pine64_wiring] and
-   [programing][pine64_prog] the watch.
+   [programming][pine64_prog] the watch.
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -178,7 +176,7 @@ are needed for these steps.
     cd chocolate-doom
     ./_build/src/chocolate-doom
     ```
-5. In a seperate terminal start the client. Available options are show with the `--help' flag.
+5. In a seperate terminal start the client. Available options are shown with the `--help' flag.
     ```sh
     cd chocolate-doom
     python ./_build/doomtime/host/client/client.py
@@ -201,8 +199,8 @@ The fastest I could achive with BLE was around 700 Kbps
 which made me choose the lowest resolution of Doom 96x48. By using the low detail option I could
 reduce data needed for a single frame to 48*48 bytes plus 1 byte for the palette index (the final
 implementation sends the palette index after each column). Low detail mode is only available in
-
 Doom, it renders every column twice.
+
 The maximum number of bytes nRF52 can write with a single DMA is 255. To reduce the number of DMAs
 the screen is written by columns.
 
@@ -217,7 +215,7 @@ recalculated after every second based on the number of average packets queued in
 second. `Displayed` is from the measured frametime on GPIO converted to FPS. Each mark is a frame
 displayed on the watch. PXX values are percentiles for statistics.
 
-TODO insert diagram
+[![picture][benchdia]](benchdia)
 
 Although I have failed to reach my goal of 35 FPS, I think the game is still playable. I tested
 with various bluetooth adapters and the controller adopts quite well with a setting time of 20-30
@@ -228,6 +226,8 @@ TODO embed video
 The video was recorded in 50 FPS. By checking the frames, I estimate that the delay between the two
 displays is around 3-6 camera frames (0.06-0.12s). This was also the point where I noticed that the
 last column is missing from the background and kept it as-is.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 
 ## License
@@ -241,9 +241,10 @@ Readme template from [othneildrew].
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [product-screenshot]: images/picture.png
-[toolchain]: https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads/9-2020-q2-update
+[toolchain]: https://developer.arm.com/downloads/-/gnu-rm
 [newt-install]: https://mynewt.apache.org/latest/newt/install/newt_linux.html#setting-up-your-computer-to-use-apt-get-to-install-the-package
 [pine64_wiring]: https://wiki.pine64.org/wiki/PineTime_Devkit_Wiring
 [pine64_prog]: https://wiki.pine64.org/wiki/Reprogramming_the_PineTime
 [cd_guide]: https://www.chocolate-doom.org/wiki/index.php/User_guide
 [othneildrew]: https://github.com/othneildrew/Best-README-Template
+[benchdia]: images/bench.png

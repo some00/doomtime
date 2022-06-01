@@ -29,7 +29,15 @@ void consumer_thread_t::join()
 
 consumer_thread_t::~consumer_thread_t()
 {
-    join();
+    try {
+        join();
+    }
+    catch (const std::exception& e) {
+        fmt::print(stderr, "exception caught in consumer thread: {}\n", e.what());
+    }
+    catch (...) {
+        fmt::print(stderr, "unknown exception caught in consumer thread");
+    }
     if (data_)
         data_->nempty.post();
 }
